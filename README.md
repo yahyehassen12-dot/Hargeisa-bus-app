@@ -80,6 +80,23 @@ lib/                store, demo data, geo/ETA math, config, types
 scripts/            Puppeteer smoke-test scripts (dev only)
 ```
 
+## GPS otomaatig ah
+
+App-ku wuxuu iskiis u weyddiinayaa goobta (GPS) marka boggu furmo. Browser-ku
+wuxuu hal mar ku weyddiin doonaa fasax; marka la ogolaado:
+
+- **Rakaabka** — goobta ugu dhow wadada si otomaatig ah ayaa loo doortaa, oo
+  waxaa lagu arkaa fogaanta iyo saxnaanta (`± m`). Haddii aad goob kale gacan ku
+  doorato, GPS-ku ma beddelo doorashadaada; badhanka “Isticmaal goobtaada” ayaa
+  dib u soo celiya.
+- **Dareewalka** — GPS-ka taleefanka ayaa baska wada; baska waxaa lagu hagaajiyaa
+  wadada, jihada-na waa la sheegaa. Simulation-ka wuu istaagaa inta GPS-ku shaqeynayo.
+- **Khariidadda** — goobtaada waxaa lagu muujiyaa dhibic buluug ah (ADIGA/GPS),
+  leh wareeg saxnaan. Badhanka “I tus goobtaada” ayaa khariidadda ku soo dhoweeya.
+
+Haddii GPS-ka la diido ama uu ka fog yahay wadada Hargeisa, app-ku wuxuu muujinayaa
+fariin cad, wuxuuna sii wadaa marka hore (demo) gabagabada.
+
 ## Tijaabinta otomaatiga ah
 
 Marka server-ku socdo:
@@ -87,6 +104,7 @@ Marka server-ku socdo:
 ```bash
 npm run audit     # functional + responsive checks
 npm run stress    # rapid remount/resize, reports page errors
+npm run gps       # mocked GPS: passenger auto-stop + driver bus
 ```
 
 Haddii server-ku ku socdo port kale, isticmaal `BASE_URL`:
