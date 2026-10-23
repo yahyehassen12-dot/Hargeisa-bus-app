@@ -1,0 +1,16 @@
+﻿import puppeteer from "puppeteer-core";
+const browser = await puppeteer.launch({ executablePath: "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe", headless: "new", args:["--no-sandbox","--disable-gpu"] });
+const page = await browser.newPage();
+const logs=[];
+page.on("console", m => logs.push(m.type()+": "+m.text()));
+page.on("pageerror", e => logs.push("pageerror: "+e.message));
+await page.setViewport({ width: 390, height: 844 });
+await page.goto("http://localhost:3000", { waitUntil: "networkidle2" });
+await new Promise(r=>setTimeout(r,2500));
+let a = await page.evaluate(() => ({ btns:[...document.querySelectorAll(".role-btn")].map(b=>b.textContent.trim()), sw: document.documentElement.scrollWidth }));
+await page.evaluate(() => localStorage.removeItem("hga_admin_v2"));
+await page.reload({ waitUntil: "networkidle2" });
+await new Promise(r=>setTimeout(r,2500));
+let b = await page.evaluate(() => ({ btns:[...document.querySelectorAll(".role-btn")].map(b=>b.textContent.trim()), sw: document.documentElement.scrollWidth, header: document.querySelector(".app-header")?.getBoundingClientRect().toJSON(), portal: document.querySelector("nextjs-portal")?.shadowRoot?.innerHTML?.slice(0,200) ?? null }));
+console.log(JSON.stringify({a,b,logs}, null, 2));
+await browser.close();
