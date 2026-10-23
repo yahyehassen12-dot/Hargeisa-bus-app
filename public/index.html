@@ -1,0 +1,397 @@
+<!DOCTYPE html>
+<html lang="so">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Hargeisa Bus Transit - Raacdeeyaha Basaska Hargeysa</title>
+  
+  <!-- Leaflet CSS for Map -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <!-- Google Fonts & Font Awesome Icons -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <!-- Top App Navigation -->
+  <header class="app-header">
+    <div class="logo-area">
+      <div class="bus-icon-badge">
+        <i class="fa-solid fa-van-shuttle"></i>
+      </div>
+      <div>
+        <h1 class="logo-title">Hargeisa<span>Bus</span></h1>
+        <p class="logo-sub">Jigjiga-Yar ⇄ Saldhiga Dhexe (Suuqa)</p>
+      </div>
+    </div>
+
+    <!-- Role Switcher Tabs -->
+    <div class="role-switcher">
+      <button id="tab-passenger" class="role-btn active" onclick="switchView('passenger')">
+        <i class="fa-solid fa-person-walking-luggage"></i> <span>Rakaabka</span>
+      </button>
+      <button id="tab-driver" class="role-btn" onclick="switchView('driver')">
+        <i class="fa-solid fa-id-card"></i> <span>Dareewalka</span>
+      </button>
+      <button id="tab-split" class="role-btn split-btn" onclick="switchView('split')">
+        <i class="fa-solid fa-columns"></i> <span>Tijaabi Labadaba</span>
+      </button>
+    </div>
+
+    <!-- User Profile / Auth Area -->
+    <div class="auth-header-area">
+      <!-- When Logged In -->
+      <div id="user-profile-badge" class="profile-badge hidden">
+        <div class="user-avatar" id="user-avatar-initial">Y</div>
+        <div class="user-info-text">
+          <span class="user-name" id="header-user-name">Yahyaa</span>
+          <span class="user-phone-tag" id="header-user-phone">
+            <span class="op-tag op-telesom" id="header-op-tag">Telesom</span>
+            <span id="header-phone-val">+252 63 4452134</span>
+          </span>
+        </div>
+        <button class="btn-logout" title="Ka bax / Beddel" onclick="logoutUser()">
+          <i class="fa-solid fa-arrow-right-from-bracket"></i>
+        </button>
+      </div>
+
+      <!-- When Logged Out -->
+      <button id="btn-open-login" class="btn-login-open" onclick="openAuthModal()">
+        <i class="fa-solid fa-user-plus"></i> <span>Is-diiwaangeli / Gal</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- Main Container -->
+  <main class="main-content" id="main-content-layout">
+
+    <!-- PASSENGER PANEL -->
+    <section id="passenger-panel" class="app-panel panel-passenger">
+      <div class="panel-header">
+        <div class="panel-title-wrap">
+          <span class="badge badge-green"><i class="fa-solid fa-circle-dot"></i> Rakaab Mode</span>
+          <h2>Raadi Baska Ugu Dhow</h2>
+        </div>
+      </div>
+
+      <div class="panel-body">
+        <!-- Direction Selection -->
+        <div class="card selector-card">
+          <label class="section-label"><i class="fa-solid fa-diamond-turn-right"></i> Halkee u socotaa?</label>
+          <div class="pill-group">
+            <button class="pill-btn active" id="btn-dir-suuq" onclick="setPassengerDirection('to_suuq')">
+              <i class="fa-solid fa-arrow-down"></i> U Socda Suuqa
+            </button>
+            <button class="pill-btn" id="btn-dir-jigjiga" onclick="setPassengerDirection('to_jigjiga')">
+              <i class="fa-solid fa-arrow-up"></i> U Socda Jigjiga-Yar
+            </button>
+          </div>
+        </div>
+
+        <!-- Current Location / Stop -->
+        <div class="card selector-card">
+          <label class="section-label"><i class="fa-solid fa-location-dot"></i> Halkee wadada ka taagan tahay?</label>
+          <select id="passenger-stop-select" class="custom-select" onchange="onPassengerStopChange()">
+            <!-- Populated dynamically via JS -->
+          </select>
+        </div>
+
+        <!-- The Big Signal Button (Wadada ayaan taaganahay) -->
+        <div class="signal-action-wrap">
+          <button id="btn-signal-bus" class="btn-signal not-waiting" onclick="togglePassengerWaiting()">
+            <div class="signal-icon-glow">
+              <i class="fa-solid fa-hand"></i>
+            </div>
+            <div class="signal-text-wrap">
+              <span class="main-cta">WADADA AYAAN TAAGANAHAY</span>
+              <span class="sub-cta">Riix si dareewalku u arko lambarkaaga & goobtaada</span>
+            </div>
+          </button>
+          <div id="signal-status-toast" class="signal-toast hidden">
+            <i class="fa-solid fa-circle-check"></i>
+            <span id="signal-toast-msg">Dareewalada xariiqan ku jira waxa u muuqata inaad taagan tahay!</span>
+          </div>
+        </div>
+
+        <!-- Nearest Bus Status Card -->
+        <div class="card bus-status-card" id="nearest-bus-card">
+          <div class="bus-card-header">
+            <div>
+              <span class="sub-muted">Baska kuugu dhow</span>
+              <h3 id="nearest-bus-name" class="bus-name">Caasi 12</h3>
+              <div id="nearest-bus-driver-info" class="driver-contact-pill">
+                <i class="fa-solid fa-user"></i> <span id="nearest-driver-name">Xasan Cali</span>
+                <span class="op-tag op-telesom sm-tag" id="nearest-driver-op">Telesom</span>
+                <a id="nearest-driver-call" href="tel:+252634452134" class="call-link"><i class="fa-solid fa-phone"></i> Wac</a>
+              </div>
+            </div>
+            <span class="plate-badge" id="nearest-bus-plate">HGA-4592</span>
+          </div>
+
+          <div class="bus-stats-grid">
+            <div class="stat-box">
+              <i class="fa-solid fa-stopwatch text-emerald"></i>
+              <div>
+                <span class="stat-label">Waqtiga (ETA)</span>
+                <span class="stat-value" id="nearest-bus-eta">2 daqiiqo</span>
+              </div>
+            </div>
+            <div class="stat-box">
+              <i class="fa-solid fa-road text-blue"></i>
+              <div>
+                <span class="stat-label">Fogaanta</span>
+                <span class="stat-value" id="nearest-bus-dist">650 m</span>
+              </div>
+            </div>
+            <div class="stat-box">
+              <i class="fa-solid fa-chair text-amber"></i>
+              <div>
+                <span class="stat-label">Kuraas Banaan</span>
+                <span class="stat-value" id="nearest-bus-seats">5 kursi</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- MAP CONTAINER -->
+    <section class="map-section">
+      <div id="bus-map" class="map-container"></div>
+      
+      <!-- Live Map Floating Overlay Info -->
+      <div class="map-floating-overlay">
+        <div class="overlay-pill live-pill">
+          <span class="live-dot"></span> Xogta Tooska ah (Live GPS)
+        </div>
+        <div class="overlay-pill route-pill">
+          <i class="fa-solid fa-route"></i> Wadada: Wadnaha & 150-ka
+        </div>
+      </div>
+    </section>
+
+    <!-- DRIVER PANEL -->
+    <section id="driver-panel" class="app-panel panel-driver">
+      <div class="panel-header">
+        <div class="panel-title-wrap">
+          <span class="badge badge-amber"><i class="fa-solid fa-van-shuttle"></i> Dareewal Mode</span>
+          <h2>Shaashadda Dareewalka</h2>
+        </div>
+        <div class="driver-online-switch">
+          <label class="switch-label">Shaqo</label>
+          <label class="toggle-switch">
+            <input type="checkbox" id="driver-online-toggle" checked onchange="toggleDriverOnline()">
+            <span class="slider round"></span>
+          </label>
+        </div>
+      </div>
+
+      <div class="panel-body">
+        <!-- Driver Info / Bus Profile -->
+        <div class="card driver-meta-card">
+          <div class="meta-row">
+            <div>
+              <span class="sub-muted">Baskaaga & Lambarkaaga:</span>
+              <h4 id="driver-bus-title">Caasi 12 (Caddaan)</h4>
+              <p class="driver-registered-phone" id="driver-display-phone">
+                <span class="op-tag op-telesom" id="driver-op-badge">Telesom</span> +252 63 4452134
+              </p>
+            </div>
+            <span class="plate-badge" id="driver-plate-badge">HGA-4592</span>
+          </div>
+          <div class="seats-adjuster">
+            <span>Kuraasida bannaan:</span>
+            <div class="counter-ctrl">
+              <button class="btn-ctrl" onclick="adjustSeats(-1)">-</button>
+              <span id="free-seats-counter" class="seats-num">5</span>
+              <button class="btn-ctrl" onclick="adjustSeats(1)">+</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Driver Route & Direction -->
+        <div class="card selector-card">
+          <label class="section-label"><i class="fa-solid fa-compass"></i> Jihada aad u socoto</label>
+          <div class="pill-group">
+            <button class="pill-btn" id="driver-dir-suuq" onclick="setDriverDirection('to_suuq')">
+              <i class="fa-solid fa-arrow-down"></i> Suuqa (Saldhiga)
+            </button>
+            <button class="pill-btn active" id="driver-dir-jigjiga" onclick="setDriverDirection('to_jigjiga')">
+              <i class="fa-solid fa-arrow-up"></i> Jigjiga-Yar
+            </button>
+          </div>
+        </div>
+
+        <!-- Test Driving Simulator Control -->
+        <div class="card sim-card">
+          <div class="sim-header">
+            <div>
+              <h4 class="sim-title"><i class="fa-solid fa-gamepad"></i> Tijaabi Socodka Baska</h4>
+              <p class="sim-desc">Baska si toos ah wadada ha u maro si aad u tijaabiso</p>
+            </div>
+            <button id="btn-toggle-sim" class="btn-sim-play" onclick="toggleDriveSimulation()">
+              <i class="fa-solid fa-play"></i> Bilow
+            </button>
+          </div>
+          <div class="progress-bar-wrap">
+            <div id="sim-progress-bar" class="progress-bar-fill"></div>
+          </div>
+        </div>
+
+        <!-- Waiting Passengers along Route (LIVE) -->
+        <div class="card passengers-queue-card">
+          <div class="queue-header">
+            <div>
+              <h4 class="section-label mb-0"><i class="fa-solid fa-users"></i> Rakaabka Sugaya</h4>
+              <span class="sub-muted">Magacyada & Lambarada telefoonka</span>
+            </div>
+            <span id="total-waiting-badge" class="badge badge-blue">3 qof ayaa taagan</span>
+          </div>
+
+          <div id="stops-queue-list" class="queue-list">
+            <!-- Dynamically populated stop by stop counters & passenger phone list -->
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+  </main>
+
+  <!-- AUTHENTICATION / REGISTRATION MODAL -->
+  <div id="auth-modal" class="modal-overlay hidden">
+    <div class="modal-card">
+      <div class="modal-header">
+        <div>
+          <h3 class="modal-title">Is-diiwaangeli / Gal</h3>
+          <p class="modal-sub">Geli lambarkaaga taleefanka si aad u isticmaasho adeegga</p>
+        </div>
+        <button class="btn-close-modal" onclick="closeAuthModal()">&times;</button>
+      </div>
+
+      <!-- STEP 1: Details & Phone -->
+      <div id="auth-step-1" class="modal-body">
+        <!-- Role Selection -->
+        <div class="form-group">
+          <label class="form-label">Waxaad u gelaysaa sida:</label>
+          <div class="role-select-cards">
+            <div class="role-card active" id="role-card-passenger" onclick="selectAuthRole('passenger')">
+              <i class="fa-solid fa-person-walking-luggage"></i>
+              <span class="role-card-title">Rakaab</span>
+              <span class="role-card-sub">Bus raadinaya</span>
+            </div>
+            <div class="role-card" id="role-card-driver" onclick="selectAuthRole('driver')">
+              <i class="fa-solid fa-van-shuttle"></i>
+              <span class="role-card-title">Dareewal</span>
+              <span class="role-card-sub">Bus wada</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Full Name -->
+        <div class="form-group">
+          <label class="form-label">Magacaaga oo buuxa:</label>
+          <input type="text" id="reg-name" class="form-input" placeholder="Tusaale: Maxamed Cali" />
+        </div>
+
+        <!-- Telecom Operator Selection -->
+        <div class="form-group">
+          <label class="form-label">Dooro Shirkadda Isgaadhsiinta:</label>
+          <div class="operator-grid">
+            <div class="operator-box op-box-telesom active" id="op-btn-telesom" onclick="selectOperator('Telesom', '25263')">
+              <div class="op-radio"><i class="fa-solid fa-circle-check"></i></div>
+              <span class="op-name">Telesom</span>
+              <span class="op-prefix">(+252 63) / ZAAD</span>
+            </div>
+            <div class="operator-box op-box-somtel" id="op-btn-somtel" onclick="selectOperator('Somtel', '25265')">
+              <div class="op-radio"><i class="fa-solid fa-circle-check"></i></div>
+              <span class="op-name">Somtel</span>
+              <span class="op-prefix">(+252 65) / e-Dahab</span>
+            </div>
+            <div class="operator-box op-box-soltelco" id="op-btn-soltelco" onclick="selectOperator('Soltelco', '25267')">
+              <div class="op-radio"><i class="fa-solid fa-circle-check"></i></div>
+              <span class="op-name">Soltelco</span>
+              <span class="op-prefix">(+252 67)</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Phone Number Input with Prefix -->
+        <div class="form-group">
+          <label class="form-label">Lambarka Taleefanka:</label>
+          <div class="phone-input-wrap">
+            <span class="phone-prefix" id="phone-prefix-display">+252 63</span>
+            <input type="tel" id="reg-phone-digits" class="phone-digits-input" placeholder="4452134" maxlength="7" oninput="validatePhoneInput()" />
+          </div>
+          <span class="field-hint">Geli 7-da lambar ee dambe (Tusaale: 4452134)</span>
+        </div>
+
+        <!-- Extra Driver Fields (Hidden when role is passenger) -->
+        <div id="driver-extra-fields" class="driver-extra-wrap hidden">
+          <div class="form-group">
+            <label class="form-label">Taargada Baska:</label>
+            <input type="text" id="reg-bus-plate" class="form-input" placeholder="Tusaale: HGA-4592" />
+          </div>
+          <div class="form-group">
+            <label class="form-label">Magaca / Nooca Baska:</label>
+            <input type="text" id="reg-bus-name" class="form-input" placeholder="Tusaale: Caasi 12 (Caddaan)" />
+          </div>
+        </div>
+
+        <button id="btn-submit-reg" class="btn-primary-action" onclick="goToOtpStep()">
+          <span>Sii Wad (Dir Koodhka SMS)</span> <i class="fa-solid fa-arrow-right"></i>
+        </button>
+      </div>
+
+      <!-- STEP 2: Simulated OTP Verification -->
+      <div id="auth-step-2" class="modal-body hidden">
+        <div class="otp-banner">
+          <div class="otp-icon-wrap">
+            <i class="fa-solid fa-comment-sms"></i>
+          </div>
+          <h4>Xaqiijinta Lambarka Taleefanka</h4>
+          <p>Koodhka xaqiijinta (OTP) waxaan u dirnay lambarka:</p>
+          <strong id="otp-phone-display" class="otp-target">+252 63 4452134</strong>
+        </div>
+
+        <!-- Simulated Incoming SMS Toast inside Modal -->
+        <div class="sim-sms-bubble">
+          <i class="fa-solid fa-envelope-open-text"></i>
+          <div>
+            <strong>📩 SMS Cusub (<span id="sms-sender-op">Telesom</span>):</strong>
+            <p>Koodhkaaga xaqiijinta HargeisaBus waa: <span class="highlight-code" id="gen-otp-code">7492</span></p>
+          </div>
+        </div>
+
+        <div class="form-group text-center">
+          <label class="form-label">Geli Koodhka 4-ta lambar ah:</label>
+          <div class="otp-inputs-grid">
+            <input type="text" maxlength="1" class="otp-digit" id="otp-1" autofocus onkeyup="moveOtpFocus(this, 'otp-2')">
+            <input type="text" maxlength="1" class="otp-digit" id="otp-2" onkeyup="moveOtpFocus(this, 'otp-3')">
+            <input type="text" maxlength="1" class="otp-digit" id="otp-3" onkeyup="moveOtpFocus(this, 'otp-4')">
+            <input type="text" maxlength="1" class="otp-digit" id="otp-4" onkeyup="moveOtpFocus(this, null)">
+          </div>
+        </div>
+
+        <button class="btn-primary-action" onclick="verifyOtpAndLogin()">
+          <i class="fa-solid fa-circle-check"></i> Xaqiiji & Dhammee
+        </button>
+        <button class="btn-link-action" onclick="backToStep1()">
+          <i class="fa-solid fa-arrow-left"></i> Dib ugu noqo lambarka
+        </button>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Socket.io & Leaflet Scripts -->
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
