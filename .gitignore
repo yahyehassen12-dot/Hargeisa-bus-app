@@ -17,3 +17,6 @@ scripts/*.json
 # os
 .DS_Store
 Thumbs.db
+
+.vercel
+.env*
